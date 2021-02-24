@@ -9,7 +9,6 @@ class ScreenSaver
   
   def self.dump_config
     File.open(CONFIG_FILE,'w') do |f|
-      p config
       f.puts JSON.pretty_generate(config)
     end
   end
@@ -24,7 +23,7 @@ class ScreenSaver
   dump_config
   
   PID = Process.pid
-  def self.cycle len=4
+  def self.cycle len=(ENV['RB_XSCREEN_INTERVAL']||config[:interval]).to_i
     at_exit {
       `kill -15 #{@pid}` if @pid
     }
@@ -65,7 +64,7 @@ class ScreenSaver
   end
   
   class << self
-    attr_accessor :fullscreen
+    attr_accessor :fullscreen, :demo
   end 
   
   def self.load path
@@ -76,6 +75,24 @@ class ScreenSaver
   end
   
   def self.default
-    ENV['RB_XSCREEN_SAVER'] || config[:default]
+    d=config[:savers][v=(ENV['RB_XSCREEN_SAVER'] || config[:default])]
+    d || v
   end 
+  
+  def self.add f
+    config[:savers][k=File.basename(f).split(".")[0].gsub("-",'_').to_sym] = f
+    dump_config
+    k
+  end
+
+  def self.remove f
+    if config[:savers][k=File.basename(f).split(".")[0].gsub("-",'_').to_sym]
+      config[:savers].delete(k)
+    else
+      config[:savers].delete(f.to_sym)
+    end
+    
+    dump_config
+    k
+  end
 end

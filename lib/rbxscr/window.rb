@@ -5,6 +5,14 @@ class ScreenSaverWindow < Gtk::Window
     super
 
     embed
+    
+    if ScreenSaver.demo
+      signal_connect "key-press-event" do
+        Gtk.main_quit
+      end   
+      
+      fullscreen
+    end
   end
   
   def embed ident = ENV['XSCREENSAVER_WINDOW']
