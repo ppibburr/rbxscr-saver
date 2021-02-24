@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+$: << File.join(File.dirname(__FILE__),"..","lib")
+
+require 'rbxscr'
+
+if ARGV[0] == '-window-id'
+  ENV['XSCREENSAVER_WINDOW'] = ARGV[1]
+  ARGV.delete_at 0
+  ARGV.delete_at 0
+else
+  ScreenSaver.fullscreen = true
+end
+
+ARGV[0] ||= ScreenSaver.default
+
+if !ARGV.empty?
+  saver = ARGV[0] if ARGV[0]
+  if saver == '--loop'
+    saver = nil
+  end
+end
+
+p xid: ENV['XSCREENSAVER_WINDOW']
+p pid: Process.pid
+
+if saver
+  ScreenSaver.load File.expand_path(ARGV[0])
+else
+  ScreenSaver.cycle
+end
+
+
+__END__
+
+if ARGV.empty?
+  ScreenSaver.run file: '' do |ss,window|
+    window.add wv=WebKit2Gtk::WebView.new
+    wv.load_uri "https://trade.kraken.com/markets?exchanges=kraken&types=spot%2Bfutures"
+    GLib::Timeout.add 9000 do
+      wv.zoom_level = 1.75
+      false
+    end
+  end
+end
