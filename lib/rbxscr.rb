@@ -4,7 +4,6 @@ class ScreenSaver
   
   `mkdir -p #{SAVERS_PATH}`
   
-  
   require 'json'
   
   def self.dump_config
@@ -16,7 +15,7 @@ class ScreenSaver
   def self.config
     @config ||= JSON.parse(open(CONFIG_FILE).read, symbolize_names: true)
   rescue => e
-    @config = {savers: {}}
+    @config = {savers: {}, interval: 60}
   end
   
   config

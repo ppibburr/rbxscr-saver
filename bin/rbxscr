@@ -38,6 +38,7 @@ end
 
 if ARGV[0] == '--default'
   p ScreenSaver.config[:default] = ARGV[1]
+  ScreenSaver.dump_config  
   ARGV.delete_at 0
   ARGV.delete_at 0
   e=true
