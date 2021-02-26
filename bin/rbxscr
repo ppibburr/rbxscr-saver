@@ -13,7 +13,7 @@ if ARGV[0] == '-window-id'
   ARGV.delete_at 0
   ARGV.delete_at 0
 else
-  ScreenSaver.fullscreen = true
+  ScreenSaver.demo = !ENV['XSCREENSAVER_WINDOW']
 end
 
 if ARGV[0] == '--add'
@@ -51,18 +51,35 @@ end
 
 exit if e
 
+if ARGV[0] == '--fullscreen'
+  ScreenSaver.fullscreen = true
+  ARGV.shift
+end
+
+ScreenSaver.fullscreen = ScreenSaver.demo
+
+if ARGV[0] == '--no-fullscreen'
+  ScreenSaver.fullscreen = false
+  ARGV.shift
+end
+
+
 ARGV[0] ||= ScreenSaver.default
 
 if !ARGV.empty?
   saver = ARGV[0] if ARGV[0]
   if saver == '--loop'
     saver = nil
+    ScreenSaver.config[:default] = nil
+    ScreenSaver.dump_config
+    exit
   end
 end
 
 p xid: ENV['XSCREENSAVER_WINDOW'],
   pid: Process.pid,
-  demo: ScreenSaver.demo = !ENV['XSCREENSAVER_WINDOW']
+  demo: ScreenSaver.demo,
+  fullscreen: ScreenSaver.fullscreen
 
 if saver
   ScreenSaver.load File.expand_path(ARGV[0])
