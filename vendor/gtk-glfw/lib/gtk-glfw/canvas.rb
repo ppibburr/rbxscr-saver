@@ -78,8 +78,12 @@ module GtkGLFW
       glfwMakeContextCurrent(glfw_window)
       
       GLib::Idle.add do
-        take xid   
-        false
+        if window && window.viewable?
+          take xid   
+          false
+        else
+          true
+        end
       end 
     end
     
@@ -103,6 +107,11 @@ module GtkGLFW
           create;    # in here to allow final Gtk::Widget size to be known 
           queue_draw
           
+          next
+        end
+        
+        unless plugged && plugged.viewable?
+          queue_draw
           next
         end
        
