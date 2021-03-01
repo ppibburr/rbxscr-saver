@@ -5,7 +5,7 @@ Dir.glob(File.join(v,"*","lib")).each do |f|
   $: << f
 end
 
-require 'gtk3'
+require 'gtk-glfw'
 require 'gtk-x11-embed'
 
 class ScreenSaver

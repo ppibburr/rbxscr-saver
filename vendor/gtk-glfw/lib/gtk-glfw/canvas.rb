@@ -12,33 +12,33 @@ require 'opengl'
 require 'glfw'
 require 'ffi'
 
+include GLFW
+include OpenGL
+
+OpenGL.load_lib
+GLFW.load_lib
+glfwInit
+
 module GLFWX11Window
   extend FFI::Library
   ffi_lib 'glfw'
   attach_function :glfwGetX11Window, [:pointer], :int
+  
+  def glfwWindowMakeGDK window
+    xid = glfwGetX11Window(FFI::Pointer.new(window.to_i))
+    Gdk::X11Window.new(Gdk::X11Display.default, xid)
+  end
 end
 
 module GtkGLFW
   # Widget embedding a glfwWindow
   module Widget  
     include GtkX11Embed::Socket
-  
-    attr_reader :glfw_window
-    attr_reader :monitor
     
-    # @param [:primary|nil] +m+
-    def monitor= m
-      case m
-      when :primary
-        @monitor = glfwGetPrimaryMonitor()
-      else
-        m
-      end
-    end
-
+    attr_reader :glfw_window
     def initialize *o,&b
       super *o
-      
+ 
       at_exit do
         glfwTerminate()
       end
@@ -48,14 +48,44 @@ module GtkGLFW
       end
       
       signal_connect "size-allocate" do
-        if glfw_ready?        
+        if plugged       
           plugged.resize allocation.width,allocation.height if plugged
         end
         
         true
       end
       
-      run &b
+      add_tick_callback do            
+        unless plugged && plugged.viewable? && plugged.ensure_native && plugged.visible?
+          next true
+        end
+       
+        unless glfw_ready?
+          next true
+        end
+       
+        glfwMakeContextCurrent(glfw_window)
+        
+        b.call glfw_window if b
+
+        glfwSwapBuffers( glfw_window )
+        glfwPollEvents()        
+        
+        next true
+      end 
+
+      create
+        
+      GLib::Idle.add do
+        take xid         
+      
+        plugged.show
+        plugged.resize allocation.width,allocation.height
+        
+        @_glfw_ready = true
+        
+        false
+      end
     end
     
     # @return [Integer] xid of the embedded glfwWindow
@@ -64,68 +94,18 @@ module GtkGLFW
       @xid||=glfwGetX11Window(ptr)
     end
     
-    # @option [:primary|nil] +monitor+
-    def create monitor: @monitor
+    def create   
       p h: y2=allocation.height
       p w: x2=allocation.width
-      p monitor: monitor
-      
-      # Smooth looking
+
       glfwWindowHint  GLFW_VISIBLE, GL_FALSE  
-      
-      @glfw_window = glfwCreateWindow(x2,y2, "??See Me", monitor, nil )
-
-      glfwMakeContextCurrent(glfw_window)
-      
-      GLib::Idle.add do
-        if window && window.viewable?
-          take xid   
-          false
-        else
-          true
-        end
-      end 
-    end
-    
-    # Setup and run the loop calling &b
-    def run &b
-      signal_connect "realize" do   
-        # allow time for X plug window
-        GLib::Idle.add do
-          plugged ? plugged.show : false
-          !plugged
-          @go = true
-        end
-          
-        false
-      end
-    
-      # setup glfw window and context
-      # loop the block
-      signal_connect "draw" do
-        unless glfw_window
-          create;    # in here to allow final Gtk::Widget size to be known 
-          queue_draw
-          
-          next
-        end
-        
-        unless plugged && plugged.viewable?
-          queue_draw
-          next
-        end
-       
-        b.call glfw_window if b
-
-        glfwSwapBuffers( glfw_window )
-        glfwPollEvents()        
-        queue_draw
-      end
+            
+      @glfw_window = glfwCreateWindow(x2,y2, "??See Me",nil, nil )
     end
     
     # @return [true|false] GLFWWindow On screen and drawable
     def glfw_ready?
-      @go
+      @_glfw_ready
     end
   end
 end

@@ -56,7 +56,7 @@ if ARGV[0] == '--fullscreen'
   ARGV.shift
 end
 
-ScreenSaver.fullscreen = ScreenSaver.demo
+ScreenSaver.fullscreen ||= !ScreenSaver.demo
 
 if ARGV[0] == '--no-fullscreen'
   ScreenSaver.fullscreen = false

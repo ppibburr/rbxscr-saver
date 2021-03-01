@@ -1,6 +1,6 @@
-require 'gtk-glfw'
 
-ScreenSaver.run( GtkGLFW::Window.new do |gflw_window|
+
+ScreenSaver.run( GtkGLFW::Window.new(monitor: ScreenSaver.fullscreen ? :primary : nil) do |gflw_window|
   width_ptr = ' ' * 8
   height_ptr = ' ' * 8
   glfwGetFramebufferSize(gflw_window, width_ptr, height_ptr)
@@ -27,3 +27,4 @@ ScreenSaver.run( GtkGLFW::Window.new do |gflw_window|
   glVertex3f(0.0, 0.6, 0.0)
   glEnd()
 end )
+

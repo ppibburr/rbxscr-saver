@@ -19,6 +19,7 @@ module GtkGLFW
     # @option [Gtk::Widget] parent if given will call `parent.add(self)`
     def initialize parent: nil
       super()
+      
       @parent = parent 
       parent.add self if parent
     end
@@ -45,9 +46,17 @@ module GtkGLFW
         false
       end
       
-      w.show_all
-    
+      plugged.hide
+      w.show
+      
+      GLib::Idle.add do
+        plugged.resize w.allocation.width, w.allocation.height
+        plugged.show
+        false 
+      end
+      
       b.call w if b
+      
       w
     end    
   end
@@ -59,27 +68,16 @@ module GtkGLFW
   # @see [GtkGLFW::Socket] for embedding as a widget in a window
   class Window < Gtk::Window
     include Widget
-  
-    # @param [:primary|nil] +monitor+
-    def initialize monitor: nil
-      super()
-
-      self.monitor = monitor if monitor      
-    end
-  
-    # sets fullscreen with @monitor or :primary
-    def fullscreen
-      super
-      self.monitor ||= (@monitor ||= :primary)
-    end
     
-    def self.run(title: 'GtkGLFW | OpenGL For RubyGtk', monitor: nil, &b)
-      w=new(monitor: monitor, &b)
+    def self.run(title: 'GtkGLFW | OpenGL For RubyGtk', &b)
+      w=new(&b)
+      w.title = title      
       w.show_all
-      w.title = title
+
       w.signal_connect "delete-event" do
         Gtk.main_quit
       end
+      
       Gtk.main
     end
   end
@@ -104,7 +102,7 @@ if __FILE__ == $0
 	  glMatrixMode(GL_MODELVIEW)
 
 	  glLoadIdentity()
-	  glRotatef(glfwGetTime() * 125.0, 0.0, 0.0, 1.0)
+	  glRotatef(glfwGetTime() * 225.0, 0.0, 0.0, 1.0)
 
 	  glBegin(GL_TRIANGLES)
 	  glColor3f(1.0, 0.0, 0.0)
@@ -118,7 +116,6 @@ if __FILE__ == $0
 
   if ARGV[0] == 'socket'
 	w=Gtk::Window.new
-	
 	w.resize 400,400
 	w.add box=Gtk::Box.new(:vertical)
 	
@@ -126,7 +123,6 @@ if __FILE__ == $0
 	box.pack_start(bin=Gtk::Frame.new,true,true,0)
 	
 	g = GtkGLFW::Socket.new(parent: bin, &demo)	
-
 	button.label = "Fullscreen"
 
 	button.signal_connect 'clicked' do
@@ -136,8 +132,9 @@ if __FILE__ == $0
         end
 	  end
 	end  
-	   
+	  
 	w.show_all
+	
 	
 	w.signal_connect "delete-event" do
 	  Gtk.main_quit
@@ -147,4 +144,6 @@ if __FILE__ == $0
   elsif ARGV[0] == 'window'
 	GtkGLFW::Window.run(&demo)
   end
+  
+  glfwTerminate()
 end
