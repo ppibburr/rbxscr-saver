@@ -20,18 +20,17 @@ module GtkGLFW
     def initialize parent: nil
       super()
       
-      @parent = parent 
       parent.add self if parent
     end
     
     # Override GtkX11Embed::Socket#swap( old, new )
-    def swap new_parent, from=@parent
-      super @parent, new_parent    
+    def swap new_parent, from=parent
+      super from, new_parent    
     end
     
     # Switches to fullscreen mode (calls Socket#swap(new_parent = w = Gtk::Window.new))
     def fullscreen &b
-      p = @parent
+      p = parent
       
       w=Gtk::Window.new
       w.extend GtkX11Embed::Socket
@@ -141,9 +140,8 @@ if __FILE__ == $0
 	end
 	
 	Gtk.main  
+	
   elsif ARGV[0] == 'window'
 	GtkGLFW::Window.run(&demo)
   end
-  
-  glfwTerminate()
 end

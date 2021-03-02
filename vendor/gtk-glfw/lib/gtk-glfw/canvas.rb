@@ -38,15 +38,7 @@ module GtkGLFW
     attr_reader :glfw_window
     def initialize *o,&b
       super *o
- 
-      at_exit do
-        glfwTerminate()
-      end
-      
-      signal_connect "destroy-event" do
-        glfwTerminate()
-      end
-      
+
       signal_connect "size-allocate" do
         if plugged       
           plugged.resize allocation.width,allocation.height if plugged
@@ -76,13 +68,17 @@ module GtkGLFW
 
       create
         
-      GLib::Idle.add do
-        take xid         
-      
-        plugged.show
-        plugged.resize allocation.width,allocation.height
+      signal_connect "realize" do
+        GLib::Idle.add do
+          take_window glfwWindowMakeGDK(glfw_window)        
         
-        @_glfw_ready = true
+          plugged.show
+          plugged.resize allocation.width,allocation.height
+          
+          @_glfw_ready = true
+          
+          false
+        end if !plugged
         
         false
       end
@@ -93,7 +89,14 @@ module GtkGLFW
       ptr = FFI::Pointer.new(glfw_window.to_i)
       @xid||=glfwGetX11Window(ptr)
     end
+
     
+    # @return [true|false] GLFWWindow On screen and drawable
+    def glfw_ready?
+      @_glfw_ready
+    end
+
+    private
     def create   
       p h: y2=allocation.height
       p w: x2=allocation.width
@@ -101,11 +104,6 @@ module GtkGLFW
       glfwWindowHint  GLFW_VISIBLE, GL_FALSE  
             
       @glfw_window = glfwCreateWindow(x2,y2, "??See Me",nil, nil )
-    end
-    
-    # @return [true|false] GLFWWindow On screen and drawable
-    def glfw_ready?
-      @_glfw_ready
     end
   end
 end
